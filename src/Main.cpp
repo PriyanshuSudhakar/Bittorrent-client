@@ -24,7 +24,7 @@ json decode_string(std::string encoded_value, int& index) {
         std::string number_string = encoded_value.substr(0, colon_index);
         int64_t number = std::atoll(number_string.c_str());
         std::string str = encoded_value.substr(colon_index + 1, number);
-        index = colon_index + number ;
+        index = colon_index + number +1;
         return json(str);
     } else {
         throw std::runtime_error("Invalid encoded value: " + encoded_value);
