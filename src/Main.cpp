@@ -12,8 +12,8 @@ json decode_bencoded_value(std::string& encoded_value, int& index);
 
 json decode_integer(std::string& encoded_value, int& index) {
     int end = encoded_value.find('e', index);
-    encoded_value = encoded_value.substr(index+1, end);
-    long long num = stoll(encoded_value);
+    std::string value = encoded_value.substr(index+1, end);
+    long long num = stoll(value);
     index = end +1;
     return json(num);
 }
