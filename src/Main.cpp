@@ -8,7 +8,7 @@
 
 using json = nlohmann::json;
 
-json decode_bencoded_value(std::string encoded_value, int& index);
+json decode_bencoded_value(std::string& encoded_value, int& index);
 
 json decode_integer(std::string& encoded_value, int& index) {
     int end = encoded_value.find('e', index);
