@@ -51,6 +51,20 @@ json decode_list(std::string& encoded_value, int& index) {
     return json(decoded_values);
 }
 
+json decode_dict(std::string encoded_value, int& index) {
+    index++;
+    std::map<json, json> mp;
+
+    while(encoded_value[index] != 'e') {
+        json key = decode_bencoded_value(encoded_value, index);
+        json value = decode_bencoded_value(encoded_value, index);
+        mp[key] = value;
+    }
+    index++;
+
+    return json(mp);
+}
+
 
 json decode_bencoded_value(std::string& encoded_value, int& index) {
     // int index = 0;
@@ -61,6 +75,8 @@ json decode_bencoded_value(std::string& encoded_value, int& index) {
         return decode_integer(encoded_value, index);
     } else if(encoded_value[index] == 'l') {
         return decode_list(encoded_value, index);
+    } else if(encoded_value[index] == 'd') {
+        return decode_dict(encoded_value, index);
     } else {
         throw std::runtime_error("Unhandled encoded value: " + encoded_value);
     }
