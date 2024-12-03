@@ -14,7 +14,7 @@ json decode_integer(std::string& encoded_value, int& index) {
     int end = encoded_value.find('e', index);
     encoded_value = encoded_value.substr(index+1, end);
     long long num = stoll(encoded_value);
-    index = end;
+    index = end +1;
     return json(num);
 }
 
@@ -36,7 +36,6 @@ json decode_list(std::string& encoded_value, int& index) {
     std::vector<json> decoded_values;
     while(encoded_value[index] != 'e') {
         decoded_values.push_back(decode_bencoded_value(encoded_value, index)); 
-        // index++;
     }
     index++;
     return json(decoded_values);
