@@ -23,7 +23,7 @@ json decode_string(std::string encoded_value, int& index) {
     if (colon_index != std::string::npos) {
         std::string number_string = encoded_value.substr(index, colon_index);
         int64_t number = std::atoll(number_string.c_str());
-        std::string str = encoded_value.substr(colon_index + 1, number);
+        std::string str = encoded_value.substr(colon_index + 1, number + index);
         index = colon_index + number +1;
         return json(str);
     } else {
