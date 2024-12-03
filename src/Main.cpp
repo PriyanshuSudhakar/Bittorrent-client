@@ -49,6 +49,8 @@ json decode_bencoded_value(std::string& encoded_value, int& index) {
         return decode_integer(encoded_value, index);
     } else if(encoded_value[index] == 'l') {
         return decode_list(encoded_value, index);
+    } else if(encoded_value[index] == 'e') {
+        return {};
     } else {
         throw std::runtime_error("Unhandled encoded value: " + encoded_value);
     }
