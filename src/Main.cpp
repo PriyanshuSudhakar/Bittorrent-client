@@ -51,18 +51,34 @@ json decode_list(std::string& encoded_value, int& index) {
     return json(decoded_values);
 }
 
-json decode_dict(std::string encoded_value, int& index) {
-    index++;
-    std::map<json, json> mp;
+// json decode_dict(std::string encoded_value, int& index) {
+//     index++;
+//     std::map<json, json> mp;
 
-    while(encoded_value[index] != 'e') {
-        json key = decode_bencoded_value(encoded_value, index);
-        json value = decode_bencoded_value(encoded_value, index);
-        mp[key] = value;
+//     while(encoded_value[index] != 'e') {
+//         json key = decode_bencoded_value(encoded_value, index); 
+//         json value = decode_bencoded_value(encoded_value, index);
+//         mp[key] = value;
+//     }
+//     index++;
+
+//     return json(mp);
+// }
+
+json decode_dict(std::string& encoded_value, int& index) {
+    index++; // Skip 'd'
+    std::map<std::string, json> decoded_dict;
+    
+    while (encoded_value[index] != 'e') {
+        json key = decode_string(encoded_value, index);  // Decoding the key (always a string)
+        if (!key.is_string()) {
+            throw std::runtime_error("Dictionary key must be a string.");
+        }
+        json value = decode_bencoded_value(encoded_value, index);  // Decoding the value
+        decoded_dict[key.get<std::string>()] = value;
     }
-    index++;
-
-    return json(mp);
+    index++; // Skip 'e'
+    return json(decoded_dict);
 }
 
 
