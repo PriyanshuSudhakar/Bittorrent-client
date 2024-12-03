@@ -32,12 +32,22 @@ json decode_string(std::string encoded_value, int& index) {
 }
 
 json decode_list(std::string& encoded_value, int& index) {
-    index++;
-    std::vector<json> decoded_values;
-    while(encoded_value[index] != 'e') {
-        decoded_values.push_back(decode_bencoded_value(encoded_value, index)); 
+    if (encoded_value[index] != 'l') {
+        throw std::runtime_error("Expected 'l' at index: " + std::to_string(index));
     }
-    index++;
+
+    index++; // Move past 'l'
+    std::vector<json> decoded_values;
+
+    while (index < encoded_value.size() && encoded_value[index] != 'e') {
+        decoded_values.push_back(decode_bencoded_value(encoded_value, index));
+    }
+
+    if (index >= encoded_value.size() || encoded_value[index] != 'e') {
+        throw std::runtime_error("Unterminated list at index: " + std::to_string(index));
+    }
+
+    index++; // Move past 'e'
     return json(decoded_values);
 }
 
