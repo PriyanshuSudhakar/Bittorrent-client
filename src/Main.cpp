@@ -74,7 +74,8 @@ int main(int argc, char* argv[]) {
 
         // Uncomment this block to pass the first stage
         std::string encoded_value = argv[2];
-        json decoded_value = decode_bencoded_value(encoded_value, 0);
+        int index = 0;
+        json decoded_value = decode_bencoded_value(encoded_value, index);
         std::cout << decoded_value.dump() << std::endl;
     } else {
         std::cerr << "unknown command: " << command << std::endl;
