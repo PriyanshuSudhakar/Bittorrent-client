@@ -36,8 +36,9 @@ json decode_list(std::string& encoded_value, int& index) {
     std::vector<json> decoded_values;
     while(encoded_value[index] != 'e') {
         decoded_values.push_back(decode_bencoded_value(encoded_value, index)); 
+        index++;
     }
-    index++;
+    // index++;
     return json(decoded_values);
 }
 
