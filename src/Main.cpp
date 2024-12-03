@@ -8,7 +8,7 @@
 
 using json = nlohmann::json;
 
-json decode_integer(std::string& encoded_value, int index) {
+json decode_integer(const std::string& encoded_value, int index) {
     int end = encoded_value.find('e', index);
     encoded_value = encoded_value.substr(index+1, end);
     long long num = stoll(encoded_value);
@@ -30,7 +30,7 @@ json decode_bencoded_value(const std::string& encoded_value) {
             throw std::runtime_error("Invalid encoded value: " + encoded_value);
         }
     } else if(encoded_value[index] == 'i') {
-        return decode_intger(encoded_value, index);
+        return decode_integer(encoded_value, index);
     } else {
         throw std::runtime_error("Unhandled encoded value: " + encoded_value);
     }
