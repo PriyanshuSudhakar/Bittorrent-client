@@ -21,9 +21,9 @@ json decode_integer(std::string& encoded_value, int& index) {
 json decode_string(std::string encoded_value, int& index) {
     size_t colon_index = encoded_value.find(':');
     if (colon_index != std::string::npos) {
-        std::string number_string = encoded_value.substr(index, colon_index);
+        std::string number_string = encoded_value.substr(index, colon_index - index);
         int64_t number = std::atoll(number_string.c_str());
-        std::string str = encoded_value.substr(colon_index + 1, number + index);
+        std::string str = encoded_value.substr(colon_index + 1, number);
         index = colon_index + number +1;
         return json(str);
     } else {
