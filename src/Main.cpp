@@ -5,7 +5,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <sstream>
-#include "lib/sha1.hpp"
+#include "src/lib/sha1.hpp"
 #include "lib/nlohmann/json.hpp"
 
 using json = nlohmann::json;
