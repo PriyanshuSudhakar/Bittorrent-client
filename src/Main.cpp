@@ -112,7 +112,7 @@ void print_piece_hashes(const json& decoded_value) {
     //     return;
     // }
 
-    // size_t n = decoded_value.size();
+    size_t n = decoded_value.size();
     // if (n % 20 != 0) {
     //     std::cerr << "Error: decoded_value size is not a multiple of 20!" << std::endl;
     //     return;
