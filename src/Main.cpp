@@ -107,16 +107,16 @@ std::string json_to_bencode(const json& j) {
 }
 
 void print_piece_hashes(const json& decoded_value) {
-    // if (!decoded_value.is_array()) {
-    //     std::cerr << "Error: decoded_value is not an array!" << std::endl;
-    //     return;
-    // }
+    if (!decoded_value.is_array()) {
+        std::cerr << "Error: decoded_value is not an array!" << std::endl;
+        return;
+    }
 
     size_t n = decoded_value.size();
-    // if (n % 20 != 0) {
-    //     std::cerr << "Error: decoded_value size is not a multiple of 20!" << std::endl;
-    //     return;
-    // }
+    if (n % 20 != 0) {
+        std::cerr << "Error: decoded_value size is not a multiple of 20!" << std::endl;
+        return;
+    }
 
     for (size_t i = 0; i < n; i += 20) {
         std::string hash = "";
