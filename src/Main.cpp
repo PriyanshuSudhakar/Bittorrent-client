@@ -146,6 +146,8 @@ int main(int argc, char* argv[]) {
         std::cout << "Tracker URL: " << decoded_value["announce"].get<std::string>() << std::endl;
         std::cout << "Length: " << decoded_value["info"]["length"].get<int>() << std::endl;
         std::cout << "Info Hash: " << info_hash << std::endl;
+        std::cout << "Piece Length: " << decoded_value["info"]["piece length"] << std::endl;
+        std::cout << "Pieces: " << decoded_value["info"]["pieces"] << std::endl;
     } else {
         std::cerr << "unknown command: " << command << std::endl;
         return 1;
