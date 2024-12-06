@@ -133,10 +133,10 @@ void print_piece_hashes(const json& decoded_value) {
         }
 
         // Convert hash to a readable hexadecimal format if needed
-        for (char c : hash) {
-            printf("%02x", static_cast<unsigned char>(c));
-        }
-        std::cout << std::endl;
+        // for (char c : hash) {
+        //     printf("%02x", static_cast<unsigned char>(c));
+        // }
+        std::cout << hash << std::endl;
     }
 }
 
