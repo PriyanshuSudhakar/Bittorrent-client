@@ -106,7 +106,7 @@ std::string json_to_bencode(const json& j) {
     return os.str();
 }
 
-void print_piece_hashes(std::string& decoded_value) {
+void print_piece_hashes(json& decoded_value) {
     int n = decoded_value.size();
     for(int i=0;i<n;i+=20) {
         int j=i;
