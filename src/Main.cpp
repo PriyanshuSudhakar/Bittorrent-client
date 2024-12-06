@@ -4,7 +4,8 @@
 #include <cctype>
 #include <cstdlib>
 #include <fstream>
-
+#include <sstream>
+#include "lib/sha1.hpp"
 #include "lib/nlohmann/json.hpp"
 
 using json = nlohmann::json;
@@ -82,6 +83,29 @@ json decode_bencoded_value(std::string& encoded_value, int& index) {
     }
 }
 
+std::string json_to_bencode(const json& j) {
+    std::ostringstream os;
+    if (j.is_object()) {
+        os << 'd';
+        for (auto& el : j.items()) {
+            os << el.key().size() << ':' << el.key() << json_to_bencode(el.value());
+        }
+        os << 'e';
+    } else if (j.is_array()) {
+        os << 'l';
+        for (const json& item : j) {
+            os << json_to_bencode(item);
+        }
+        os << 'e';
+    } else if (j.is_number_integer()) {
+        os << 'i' << j.get<int>() << 'e';
+    } else if (j.is_string()) {
+        const std::string& value = j.get<std::string>();
+        os << value.size() << ':' << value;
+    }
+    return os.str();
+}
+
 int main(int argc, char* argv[]) {
     // Flush after every std::cout / std::cerr
     std::cout << std::unitbuf;
@@ -114,8 +138,13 @@ int main(int argc, char* argv[]) {
         file.close();
         int id = 0;
         json decoded_value = decode_bencoded_value(fileContent, id);
+        std::string bencoded_info = json_to_bencode(decoded_value);
+        SHA1 sha1;
+        sha1.update(bencoded_info);
+        std::string info_hash = sha1.final();
         std::cout << "Tracker URL: " << decoded_value["announce"].get<std::string>() << std::endl;
         std::cout << "Length: " << decoded_value["info"]["length"].get<int>() << std::endl;
+        std::cout << "Info Hash: " << info_hash << std::endl;
     } else {
         std::cerr << "unknown command: " << command << std::endl;
         return 1;
