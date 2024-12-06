@@ -125,10 +125,10 @@ void print_piece_hashes(const json& pieces) {
         std::string hash = piece_hashes.substr(i, 20);
 
         // Convert hash to a readable hexadecimal format
-        for (char c : hash) {
-            printf("%02x", static_cast<unsigned char>(c));
-        }
-        std::cout << std::endl;
+        // for (char c : hash) {
+        //     printf("%02x", static_cast<unsigned char>(c));
+        // }
+        std::cout << hash << std::endl;
     }
 }
 
