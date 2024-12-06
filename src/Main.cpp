@@ -106,6 +106,22 @@ std::string json_to_bencode(const json& j) {
     return os.str();
 }
 
+void print_piece_hashes(std::string& decoded_value) {
+    int n = decoded_value.size();
+    for(int i=0;i<n;i+=20) {
+        int j=i;
+        std::string hash = "";
+
+        for(int j=i;j<i+20;j++) {
+            hash += decoded_value[j];
+        }
+
+        std::cout<<hash<<std::endl;
+    }
+
+    return;
+}
+
 int main(int argc, char* argv[]) {
     // Flush after every std::cout / std::cerr
     std::cout << std::unitbuf;
@@ -147,7 +163,8 @@ int main(int argc, char* argv[]) {
         std::cout << "Length: " << decoded_value["info"]["length"].get<int>() << std::endl;
         std::cout << "Info Hash: " << info_hash << std::endl;
         std::cout << "Piece Length: " << decoded_value["info"]["piece length"] << std::endl;
-        std::cout << "Pieces: " << decoded_value["info"]["pieces"] << std::endl;
+        // std::cout << "Pieces: " << decoded_value["info"]["pieces"] << std::endl;
+        print_piece_hashes(decoded_value["info"]["pieces"]);
     } else {
         std::cerr << "unknown command: " << command << std::endl;
         return 1;
