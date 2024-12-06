@@ -106,21 +106,40 @@ std::string json_to_bencode(const json& j) {
     return os.str();
 }
 
-void print_piece_hashes(json& decoded_value) {
-    int n = decoded_value.size();
-    for(int i=0;i<n;i+=20) {
-        int j=i;
-        std::string hash = "";
-
-        for(int j=i;j<i+20;j++) {
-            hash += decoded_value[j];
-        }
-
-        std::cout<<hash<<std::endl;
+void print_piece_hashes(const json& decoded_value) {
+    if (!decoded_value.is_array()) {
+        std::cerr << "Error: decoded_value is not an array!" << std::endl;
+        return;
     }
 
-    return;
+    size_t n = decoded_value.size();
+    if (n % 20 != 0) {
+        std::cerr << "Error: decoded_value size is not a multiple of 20!" << std::endl;
+        return;
+    }
+
+    for (size_t i = 0; i < n; i += 20) {
+        std::string hash = "";
+        
+        // Collect 20 bytes into a string
+        for (size_t j = i; j < i + 20; j++) {
+            if (!decoded_value[j].is_number_integer()) {
+                std::cerr << "Error: Non-integer value in decoded_value!" << std::endl;
+                return;
+            }
+
+            char byte = static_cast<char>(decoded_value[j].get<int>());
+            hash += byte;
+        }
+
+        // Convert hash to a readable hexadecimal format if needed
+        for (char c : hash) {
+            printf("%02x", static_cast<unsigned char>(c));
+        }
+        std::cout << std::endl;
+    }
 }
+
 
 int main(int argc, char* argv[]) {
     // Flush after every std::cout / std::cerr
