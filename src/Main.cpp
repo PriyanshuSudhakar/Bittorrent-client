@@ -106,39 +106,32 @@ std::string json_to_bencode(const json& j) {
     return os.str();
 }
 
-void print_piece_hashes(const json& decoded_value) {
-    if (!decoded_value.is_array()) {
-        std::cerr << "Error: decoded_value is not an array!" << std::endl;
+void print_piece_hashes(const json& pieces) {
+    if (!pieces.is_string()) {
+        std::cerr << "Error: 'pieces' is not a string!" << std::endl;
         return;
     }
 
-    size_t n = decoded_value.size();
+    std::string piece_hashes = pieces.get<std::string>();
+    size_t n = piece_hashes.size();
+
     if (n % 20 != 0) {
-        std::cerr << "Error: decoded_value size is not a multiple of 20!" << std::endl;
+        std::cerr << "Error: 'pieces' size is not a multiple of 20!" << std::endl;
         return;
     }
 
+    // Loop through the pieces in chunks of 20 bytes
     for (size_t i = 0; i < n; i += 20) {
-        std::string hash = "";
-        
-        // Collect 20 bytes into a string
-        for (size_t j = i; j < i + 20; j++) {
-            if (!decoded_value[j].is_number_integer()) {
-                std::cerr << "Error: Non-integer value in decoded_value!" << std::endl;
-                return;
-            }
+        std::string hash = piece_hashes.substr(i, 20);
 
-            char byte = static_cast<char>(decoded_value[j].get<int>());
-            hash += byte;
+        // Convert hash to a readable hexadecimal format
+        for (char c : hash) {
+            printf("%02x", static_cast<unsigned char>(c));
         }
-
-        // Convert hash to a readable hexadecimal format if needed
-        // for (char c : hash) {
-        //     printf("%02x", static_cast<unsigned char>(c));
-        // }
-        std::cout << hash << std::endl;
+        std::cout << std::endl;
     }
 }
+
 
 
 int main(int argc, char* argv[]) {
