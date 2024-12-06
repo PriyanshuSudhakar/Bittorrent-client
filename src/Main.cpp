@@ -139,6 +139,7 @@ int main(int argc, char* argv[]) {
         int id = 0;
         json decoded_value = decode_bencoded_value(fileContent, id);
         std::string bencoded_info = json_to_bencode(decoded_value);
+        std::cout<<bencoded_info<<std::endl;
         SHA1 sha1;
         sha1.update(bencoded_info);
         std::string info_hash = sha1.final();
