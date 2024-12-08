@@ -47,5 +47,3 @@ _deps
 .DS_Store
 build/
 
-src/lib/curl_x64-windows/bin/libcurl.pdb
-src/lib/curl_x64-windows/debug/bin/libcurl-d.pdb
