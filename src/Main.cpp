@@ -7,6 +7,8 @@
 #include <sstream>
 #include "lib/sha1.hpp"
 #include "lib/nlohmann/json.hpp"
+#include <curl/curl.h>
+
 
 using json = nlohmann::json;
 
@@ -175,7 +177,6 @@ int main(int argc, char* argv[]) {
         std::cout << "Length: " << decoded_value["info"]["length"].get<int>() << std::endl;
         std::cout << "Info Hash: " << info_hash << std::endl;
         std::cout << "Piece Length: " << decoded_value["info"]["piece length"] << std::endl;
-        // std::cout << "Pieces: " << decoded_value["info"]["pieces"] << std::endl;
         print_piece_hashes(decoded_value["info"]["pieces"]);
     } else {
         std::cerr << "unknown command: " << command << std::endl;
