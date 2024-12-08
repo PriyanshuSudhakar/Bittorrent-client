@@ -7,7 +7,7 @@
 #include <sstream>
 #include "lib/sha1.hpp"
 #include "lib/nlohmann/json.hpp"
-#include <curl/curl.h>
+#include <lib/curl_x64-windows/include/curl/curl.h>
 
 
 using json = nlohmann::json;
