@@ -216,7 +216,9 @@ int main(int argc, char* argv[]) {
         std::string left = std::to_string(fileContent.size()); // Convert size_t to string
 
 
-        http::Request request{url + "?info_hash=" + encoded_info_hash + "&peer_id=00112233445566778899&port=6881&uploaded=0&downloaded=0&left=" + left + "&compact=1"};
+        // http::Request request{url + "?info_hash=" + encoded_info_hash + "&peer_id=00112233445566778899&port=6881&uploaded=0&downloaded=0&left=" + left + "&compact=1"};
+        std::string request_url = url + "?info_hash=" + encoded_info_hash + "&peer_id=00112233445566778899&port=6881&uploaded=0&downloaded=0&left=" + left + "&compact=1";
+http::Request request{request_url};
         const auto response = request.send("GET");
 
         // Process the response as a std::string
