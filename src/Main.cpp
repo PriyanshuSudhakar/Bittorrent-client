@@ -233,6 +233,8 @@ int main(int argc, char* argv[]) {
         // Process the response as a std::string
         std::string response_body{response.body.begin(), response.body.end()};
 
+        std::cout<<response_body<<std::endl;
+
         // Decode the bencoded response (no string_view here)
         int idx = 0;
         json decoded_response = decode_bencoded_value(response_body, idx);
