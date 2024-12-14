@@ -191,7 +191,7 @@ int main(int argc, char* argv[]) {
         // std::cout << "Pieces: " << decoded_value["info"]["pieces"] << std::endl;
         print_piece_hashes(decoded_value["info"]["pieces"]);
     } else if(command == "peers") {
-                        std::ifstream input_file{argv[2], std::ios::binary};
+                std::ifstream input_file{argv[2], std::ios::binary};
                 if (!input_file)
                 {
                         std::cerr << "Error opening torrent file: " << argv[2] << std::endl;
@@ -199,14 +199,15 @@ int main(int argc, char* argv[]) {
                 }
                 std::vector<char> file_data((std::istreambuf_iterator<char>(input_file)), std::istreambuf_iterator<char>());
                 std::string_view file_data_view(file_data.data(), file_data.size());
+                std::string file_data_str(file_data_view);
                 try
                 {
                         int index = 0;
                         SHA1 sha1;
-                        auto decoded_info = decode_bencoded_value(file_data_view, index);
+                        auto decoded_info = decode_bencoded_value(file_data_str, index);
                         std::string bencoded_string = json_to_bencode(decoded_info.at("info"));
                         std::string url = decoded_info.at("announce").get<std::string>();
-                        SHA1 sha1;
+                        // SHA1 sha1;
                         sha1.update(bencoded_string);
                         std::string encoded_info_hash = sha1.final();
                         // std::string encoded_info_hash = url_encode(sha1(bencoded_string));
