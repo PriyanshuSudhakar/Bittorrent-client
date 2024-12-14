@@ -7,8 +7,7 @@
 #include <sstream>
 #include "lib/sha1.hpp"
 #include "lib/nlohmann/json.hpp"
-
-
+#include "lib/HTTP.hpp"
 
 using json = nlohmann::json;
 
@@ -134,6 +133,37 @@ void print_piece_hashes(const json& pieces) {
     }
 }
 
+std::string url_encode(const std::string &hex_string)
+{
+        std::string result;
+        result.reserve(hex_string.length() + hex_string.length() / 2);
+        std::vector<bool> unreserved;
+        for (int i = '0'; i <= '9'; ++i)
+                unreserved[i] = true;
+        for (int i = 'A'; i <= 'Z'; ++i)
+                unreserved[i] = true;
+        for (int i = 'a'; i <= 'z'; ++i)
+                unreserved[i] = true;
+        unreserved['-'] = true;
+        unreserved['_'] = true;
+        unreserved['.'] = true;
+        unreserved['~'] = true;
+        for (size_t i = 0; i < hex_string.length(); i += 2)
+        {
+                std::string byte_str = hex_string.substr(i, 2);
+                size_t byte_val = std::stoul(byte_str, nullptr, 16);
+                if (unreserved[byte_val])
+                {
+                        result += static_cast<char>(byte_val);
+                }
+                else
+                {
+                        result += "%" + byte_str;
+                }
+        }
+        return result;
+}
+
 
 
 int main(int argc, char* argv[]) {
@@ -177,7 +207,53 @@ int main(int argc, char* argv[]) {
         std::cout << "Length: " << decoded_value["info"]["length"].get<int>() << std::endl;
         std::cout << "Info Hash: " << info_hash << std::endl;
         std::cout << "Piece Length: " << decoded_value["info"]["piece length"] << std::endl;
+        // std::cout << "Pieces: " << decoded_value["info"]["pieces"] << std::endl;
         print_piece_hashes(decoded_value["info"]["pieces"]);
+    } else if(command == "peers") {
+        std::string filePath = argv[2];
+        std::ifstream file(filePath, std::ios::binary);
+        std::string fileContent((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+        file.close();
+
+        int id = 0;
+        json decoded_value = decode_bencoded_value(fileContent, id);
+
+    try {
+        SHA1 sha1;
+        std::string bencoded_info = json_to_bencode(decoded_value["info"]);
+        std::string url = decoded_value["announce"].get<std::string>();
+        sha1.update(bencoded_info);
+        std::string info_hash = sha1.final();
+        std::string encoded_info_hash = url_encode(info_hash);
+        std::string left = std::to_string(fileContent.size()); // Convert size_t to string
+
+        http::Request request{url + "?info_hash=" + encoded_info_hash + "&peer_id=00112233445566778899&port=6881&uploaded=0&downloaded=0&left=" + left + "&compact=1"};
+        const auto response = request.send("GET");
+
+        // Process the response as a std::string
+        std::string response_body{response.body.begin(), response.body.end()};
+
+        // Decode the bencoded response (no string_view here)
+        int idx = 0;
+        json decoded_response = decode_bencoded_value(response_body, idx);
+
+        // Extract the "peers" string from the decoded response
+        std::string peers = decoded_response.at("peers").get<std::string>();
+
+        // Process each peer (IP:port)
+        for (size_t i = 0; i < peers.length(); i += 6) {
+            std::string ip = std::to_string(static_cast<unsigned char>(peers[i])) + "." +
+                            std::to_string(static_cast<unsigned char>(peers[i + 1])) + "." +
+                            std::to_string(static_cast<unsigned char>(peers[i + 2])) + "." +
+                            std::to_string(static_cast<unsigned char>(peers[i + 3]));
+            uint16_t port = (static_cast<uint16_t>(static_cast<unsigned char>(peers[i + 4]) << 8)) | static_cast<uint16_t>(static_cast<unsigned char>(peers[i + 5]));
+            std::cout << ip << ":" << port << std::endl;
+        }
+
+    } catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+    }
+
     } else {
         std::cerr << "unknown command: " << command << std::endl;
         return 1;
