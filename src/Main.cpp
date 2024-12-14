@@ -162,6 +162,18 @@ std::string hex_to_bytes(const std::string& hex) {
     return bytes;
 }
 
+std::string url_encode(const std::string& data) {
+    std::ostringstream encoded;
+    for (unsigned char c : data) {
+        if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') {
+            encoded << c;
+        } else {
+            encoded << '%' << std::setw(2) << std::setfill('0') << std::hex << static_cast<int>(c);
+        }
+    }
+    return encoded.str();
+}
+
 
 
 int main(int argc, char* argv[]) {
@@ -228,6 +240,7 @@ int main(int argc, char* argv[]) {
                         sha1.update(bencoded_string);
                         std::string encoded_info_hash = sha1.final();
                         encoded_info_hash = hex_to_bytes(encoded_info_hash);
+                        encoded_info_hash = url_encode(encoded_info_hash);
                         std::string left = std::to_string(file_data.size()); // Convert size_t to string
                         std::string peer_id = generate_random_peer_id();
                         std::cout<<url + "?info_hash=" + encoded_info_hash + "&peer_id=" + peer_id + "&port=6881&uploaded=0&downloaded=0&left=" + left + "&compact=1"<<std::endl;
