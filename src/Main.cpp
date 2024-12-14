@@ -10,6 +10,20 @@
 #include "lib/HTTP.hpp"
 
 using json = nlohmann::json;
+#include <random>
+
+std::string generate_random_peer_id() {
+    std::string peer_id = "-MY1234-"; // Example prefix
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dist(0, 35);
+
+    const char charset[] = "0123456789abcdefghijklmnopqrstuvwxyz";
+    for (size_t i = 0; i < 12; ++i) { // Generate remaining 12 characters
+        peer_id += charset[dist(gen)];
+    }
+    return peer_id;
+}
 
 json decode_bencoded_value(std::string& encoded_value, int& index);
 
@@ -212,7 +226,8 @@ int main(int argc, char* argv[]) {
                         std::string encoded_info_hash = sha1.final();
                         // std::string encoded_info_hash = url_encode(sha1(bencoded_string));
                         std::string left = std::to_string(file_data.size()); // Convert size_t to string
-                        http::Request request{url + "?info_hash=" + encoded_info_hash + "&peer_id=00112233445566778899&port=6881&uploaded=0&downloaded=0&left=" + left + "&compact=1"};
+                        std::string peer_id = generate_random_peer_id();
+                        http::Request request{url + "?info_hash=" + encoded_info_hash + "&peer_id=" + peer_id + "&port=6881&uploaded=0&downloaded=0&left=" + left + "&compact=1"};
                         const auto response = request.send("GET");
                         std::string response_body{response.body.begin(), response.body.end()};
                         std::string_view response_body_view(response_body.data(), response_body.size()); index = 0;
