@@ -223,7 +223,9 @@ int main(int argc, char* argv[]) {
                         std::string url = decoded_info.at("announce").get<std::string>();
                         // SHA1 sha1;
                         sha1.update(bencoded_string);
-                        std::string encoded_info_hash = url_encode(sha1.final());
+                        std::string encoded_info_hash = sha1.final();
+                        // std::cout<<encoded_info_hash<<std::endl;
+                        std::cout<<encoded_info_hash<<std::endl;
                         // std::string encoded_info_hash = url_encode(sha1(bencoded_string));
                         std::string left = std::to_string(file_data.size()); // Convert size_t to string
                         std::string peer_id = generate_random_peer_id();
