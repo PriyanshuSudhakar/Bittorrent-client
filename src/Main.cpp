@@ -200,7 +200,7 @@ int main(int argc, char* argv[]) {
         json decoded_value = decode_bencoded_value(fileContent, id);
 
     try {
-        SHA1 sha1;
+        // SHA1 sha1;
         std::string bencoded_info = json_to_bencode(decoded_value["info"]);
         std::string url = decoded_value["announce"].get<std::string>();
         // sha1.update(bencoded_info);
