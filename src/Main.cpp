@@ -230,6 +230,7 @@ int main(int argc, char* argv[]) {
                         encoded_info_hash = hex_to_bytes(encoded_info_hash);
                         std::string left = std::to_string(file_data.size()); // Convert size_t to string
                         std::string peer_id = generate_random_peer_id();
+                        std::cout<<url + "?info_hash=" + encoded_info_hash + "&peer_id=" + peer_id + "&port=6881&uploaded=0&downloaded=0&left=" + left + "&compact=1"<<std::endl;
                         http::Request request{url + "?info_hash=" + encoded_info_hash + "&peer_id=" + peer_id + "&port=6881&uploaded=0&downloaded=0&left=" + left + "&compact=1"};
                         const auto response = request.send("GET");
                         std::string response_body{response.body.begin(), response.body.end()};
