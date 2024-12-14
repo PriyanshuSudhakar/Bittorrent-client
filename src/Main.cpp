@@ -191,59 +191,43 @@ int main(int argc, char* argv[]) {
         // std::cout << "Pieces: " << decoded_value["info"]["pieces"] << std::endl;
         print_piece_hashes(decoded_value["info"]["pieces"]);
     } else if(command == "peers") {
-        std::string filePath = argv[2];
-        std::ifstream file(filePath, std::ios::binary);
-        std::string fileContent((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-        file.close();
-
-        int id = 0;
-        json decoded_value = decode_bencoded_value(fileContent, id);
-
-    try {
-        // SHA1 sha1;
-        std::string bencoded_info = json_to_bencode(decoded_value["info"]);
-        std::string url = decoded_value["announce"].get<std::string>();
-        // sha1.update(bencoded_info);
-        // std::string info_hash = sha1.final();
-
-
-
-        SHA1 sha1;
-        sha1.update(bencoded_info);
-        std::string info_hash = sha1.final();  // This returns a 20-byte raw hash
-
-        std::string encoded_info_hash = url_encode(info_hash); std::cout<<encoded_info_hash<<std::endl;
-        std::string left = std::to_string(fileContent.size()); // Convert size_t to string
-
-
-        // http::Request request{url + "?info_hash=" + encoded_info_hash + "&peer_id=00112233445566778899&port=6881&uploaded=0&downloaded=0&left=" + left + "&compact=1"};
-        std::string request_url = url + "?info_hash=" + encoded_info_hash + "&peer_id=00112233445566778899&port=6881&uploaded=0&downloaded=0&left=" + left + "&compact=1";
-        http::Request request{request_url};
-        const auto response = request.send("GET");
-
-        // Process the response as a std::string
-        std::string response_body{response.body.begin(), response.body.end()};
-
-        // std::cout<<response_body<<std::endl;
-
-        // Decode the bencoded response (no string_view here)
-        int idx = 0;
-        json decoded_response = decode_bencoded_value(response_body, idx);
-
-        // Extract the "peers" string from the decoded response
-        std::string peers = decoded_response.at("peers").get<std::string>();
-
-        // Process each peer (IP:port)
-        for (size_t i = 0; i < peers.length(); i += 6) {
-            std::string ip = std::to_string(static_cast<unsigned char>(peers[i])) + "." +
-                            std::to_string(static_cast<unsigned char>(peers[i + 1])) + "." +
-                            std::to_string(static_cast<unsigned char>(peers[i + 2])) + "." +
-                            std::to_string(static_cast<unsigned char>(peers[i + 3]));
-            uint16_t port = (static_cast<uint16_t>(static_cast<unsigned char>(peers[i + 4]) << 8)) | static_cast<uint16_t>(static_cast<unsigned char>(peers[i + 5]));
-            std::cout << ip << ":" << port << std::endl;
-        }
-
-    } catch (const std::exception& e) {
+                        std::ifstream input_file{argv[2], std::ios::binary};
+                if (!input_file)
+                {
+                        std::cerr << "Error opening torrent file: " << argv[2] << std::endl;
+                        return 1;
+                }
+                std::vector<char> file_data((std::istreambuf_iterator<char>(input_file)), std::istreambuf_iterator<char>());
+                std::string_view file_data_view(file_data.data(), file_data.size());
+                try
+                {
+                        int index = 0;
+                        SHA1 sha1;
+                        auto decoded_info = decode_bencoded_value(file_data_view, index);
+                        std::string bencoded_string = json_to_bencode(decoded_info.at("info"));
+                        std::string url = decoded_info.at("announce").get<std::string>();
+                        SHA1 sha1;
+                        sha1.update(bencoded_string);
+                        std::string encoded_info_hash = sha1.final();
+                        // std::string encoded_info_hash = url_encode(sha1(bencoded_string));
+                        std::string left = std::to_string(file_data.size()); // Convert size_t to string
+                        http::Request request{url + "?info_hash=" + encoded_info_hash + "&peer_id=00112233445566778899&port=6881&uploaded=0&downloaded=0&left=" + left + "&compact=1"};
+                        const auto response = request.send("GET");
+                        std::string response_body{response.body.begin(), response.body.end()};
+                        std::string_view response_body_view(response_body.data(), response_body.size()); index = 0;
+                        std::string response_body_str(response_body_view);
+                        auto decoded_response = decode_bencoded_value(response_body_str, index);
+                        std::string peers = decoded_response.at("peers").get<std::string>();
+                        for (size_t i = 0; i < peers.length(); i += 6)
+                        {
+                                std::string ip = std::to_string(static_cast<unsigned char>(peers[i])) + "." +
+                                                 std::to_string(static_cast<unsigned char>(peers[i + 1])) + "." +
+                                                 std::to_string(static_cast<unsigned char>(peers[i + 2])) + "." +
+                                                 std::to_string(static_cast<unsigned char>(peers[i + 3]));
+                                uint16_t port = (static_cast<uint16_t>(static_cast<unsigned char>(peers[i + 4]) << 8)) | static_cast<uint16_t>(static_cast<unsigned char>(peers[i + 5]));
+                                std::cout << ip << ":" << port << std::endl;
+                        }
+                } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
     }
 
