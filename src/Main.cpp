@@ -203,10 +203,18 @@ int main(int argc, char* argv[]) {
         SHA1 sha1;
         std::string bencoded_info = json_to_bencode(decoded_value["info"]);
         std::string url = decoded_value["announce"].get<std::string>();
+        // sha1.update(bencoded_info);
+        // std::string info_hash = sha1.final();
+
+
+
+        SHA1 sha1;
         sha1.update(bencoded_info);
-        std::string info_hash = sha1.final();
+        std::string info_hash = sha1.final();  // This returns a 20-byte raw hash
+
         std::string encoded_info_hash = url_encode(info_hash);
         std::string left = std::to_string(fileContent.size()); // Convert size_t to string
+
 
         http::Request request{url + "?info_hash=" + encoded_info_hash + "&peer_id=00112233445566778899&port=6881&uploaded=0&downloaded=0&left=" + left + "&compact=1"};
         const auto response = request.send("GET");
