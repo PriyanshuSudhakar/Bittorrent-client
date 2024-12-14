@@ -147,16 +147,19 @@ void print_piece_hashes(const json& pieces) {
     }
 }
 
-std::string url_encode(const std::string &value) {
-    std::ostringstream encoded;
-    for (unsigned char c : value) {
-        if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') {
-            encoded << c;
-        } else {
-            encoded << '%' << std::uppercase << std::setw(2) << std::setfill('0') << int(c);
-        }
+
+std::string hex_to_bytes(const std::string& hex) {
+    if (hex.length() % 2 != 0) {
+        throw std::invalid_argument("Invalid hex string length");
     }
-    return encoded.str();
+
+    std::string bytes;
+    bytes.reserve(hex.length() / 2);
+    for (size_t i = 0; i < hex.length(); i += 2) {
+        unsigned char byte = std::stoi(hex.substr(i, 2), nullptr, 16);
+        bytes.push_back(static_cast<char>(byte));
+    }
+    return bytes;
 }
 
 
@@ -224,9 +227,7 @@ int main(int argc, char* argv[]) {
                         // SHA1 sha1;
                         sha1.update(bencoded_string);
                         std::string encoded_info_hash = sha1.final();
-                        // std::cout<<encoded_info_hash<<std::endl;
-                        std::cout<<encoded_info_hash<<std::endl;
-                        // std::string encoded_info_hash = url_encode(sha1(bencoded_string));
+                        encoded_info_hash = hex_to_bytes(encoded_info_hash);
                         std::string left = std::to_string(file_data.size()); // Convert size_t to string
                         std::string peer_id = generate_random_peer_id();
                         http::Request request{url + "?info_hash=" + encoded_info_hash + "&peer_id=" + peer_id + "&port=6881&uploaded=0&downloaded=0&left=" + left + "&compact=1"};
