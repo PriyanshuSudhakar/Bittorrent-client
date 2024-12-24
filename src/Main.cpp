@@ -9,7 +9,7 @@
 #include "lib/nlohmann/json.hpp"
 #include "lib/HTTP.hpp"
 #include <random>
-#include "lib/winSock2.h"
+#include "lib/WinSock2.h"
 #include "lib/WS2tcpip.h"
 
 using json = nlohmann::json;
