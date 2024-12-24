@@ -511,42 +511,32 @@ std::string read_file(const std::string &filePath)
     }
 }
 
-void parse_torrent(const std::string &filePath)
+auto parse_torrent_file(const std::string &filePath)
 {
     std::string fileContent = read_file(filePath);
     int index = 0;
-    json decoded_torrent = decode_bencoded_value(fileContent, index);
-    // bencode the torrent
-    std::string bencoded_info = json_to_bencode(decoded_torrent["info"]);
-    // calculate the info hash
-    SHA1 sha1;
-    sha1.update(bencoded_info);
-    std::string infoHash = sha1.final();
-    // announceURL
-    std::string trackerURL = decoded_torrent["announce"];
+    json decodedTorrent = decode_bencoded_value(fileContent, index);
 
-    // length
-    int length = decoded_torrent["info"]["length"];
-    // piece length
-    int pieceLength = decoded_torrent["info"]["piece length"];
-
-    std::cout << "Tracker URL: " << trackerURL << std::endl;
-    std::cout << "Length: " << length << std::endl;
-    std::cout << "Info Hash: " << infoHash << std::endl;
-    std::cout << "Piece Length: " << pieceLength << std::endl;
-    std::cout << "Piece Hashes: " << std::endl;
-    // concatenated SHA-1 hashes of each piece (20 bytes each)
-    for (std::size_t i = 0; i < decoded_torrent["info"]["pieces"].get<std::string>().length(); i += 20)
+    // Check mandatory fields
+    if (!decodedTorrent.contains("announce") || decodedTorrent["announce"].is_null())
     {
-        std::string piece = decoded_torrent["info"]["pieces"].get<std::string>().substr(i, 20);
-        std::stringstream ss;
-        for (unsigned char byte : piece)
-        {
-            ss << std::hex << std::setw(2) << std::setfill('0') << (int)byte;
-        }
-        std::cout << ss.str() << std::endl;
+        throw std::runtime_error("Missing or null 'announce' field in the torrent file");
     }
+    if (!decodedTorrent["info"].contains("pieces") || decodedTorrent["info"]["pieces"].is_null())
+    {
+        throw std::runtime_error("Missing or null 'pieces' field in 'info'");
+    }
+
+    std::string trackerURL = decodedTorrent["announce"];
+    size_t length = decodedTorrent["info"]["length"];
+    size_t pieceLength = decodedTorrent["info"]["piece length"];
+    size_t totalPieces = (length + pieceLength - 1) / pieceLength;
+    std::string infoHash = calculateInfohash(json_to_bencode(decodedTorrent["info"]));
+    std::string pieceHashes = decodedTorrent["info"]["pieces"];
+
+    return std::make_tuple(decodedTorrent, trackerURL, length, pieceLength, totalPieces, infoHash, pieceHashes);
 }
+
 std::string generate_tracker_url(const std::string &trackerURL, const std::string &infoHash, const std::string &peerID, size_t length)
 {
     std::ostringstream url;
