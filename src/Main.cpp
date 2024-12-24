@@ -168,12 +168,12 @@ std::vector<uint8_t> download_piece(int sockfd, size_t pieceIndex, size_t pieceL
         {
             throw std::runtime_error("Expected piece message");
         }
-        int ix = ntohl(*reinterpret_cast<int *>(&message[1]));
+        int index = ntohl(*reinterpret_cast<int *>(&message[1]));
         int begin = ntohl(*reinterpret_cast<int *>(&message[5]));
         const uint8_t *block = &message[9];
         int blockLength = message.size() - 9;
         auto it = std::find_if(pendingRequests.begin(), pendingRequests.end(), [&](const BlockRequest &req)
-                               { return req.piece_index == ix && req.offset == begin; });
+                               { return req.piece_index == index && req.offset == begin; });
         if (it == pendingRequests.end())
         {
             throw std::runtime_error("Unexpected block received");
@@ -613,24 +613,12 @@ auto parse_torrent_file(const std::string &filePath)
     std::string fileContent = read_file(filePath);
     int index = 0;
     json decodedTorrent = decode_bencoded_value(fileContent, index);
-
-    // Check mandatory fields
-    if (!decodedTorrent.contains("announce") || decodedTorrent["announce"].is_null())
-    {
-        throw std::runtime_error("Missing or null 'announce' field in the torrent file");
-    }
-    if (!decodedTorrent["info"].contains("pieces") || decodedTorrent["info"]["pieces"].is_null())
-    {
-        throw std::runtime_error("Missing or null 'pieces' field in 'info'");
-    }
-
     std::string trackerURL = decodedTorrent["announce"];
     size_t length = decodedTorrent["info"]["length"];
     size_t pieceLength = decodedTorrent["info"]["piece length"];
     size_t totalPieces = (length + pieceLength - 1) / pieceLength;
     std::string infoHash = calculateInfohash(json_to_bencode(decodedTorrent["info"]));
     std::string pieceHashes = decodedTorrent["info"]["pieces"];
-
     return std::make_tuple(decodedTorrent, trackerURL, length, pieceLength, totalPieces, infoHash, pieceHashes);
 }
 
