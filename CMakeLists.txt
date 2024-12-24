@@ -4,7 +4,7 @@ project(bittorrent-starter-cpp)
 
 file(GLOB_RECURSE SOURCE_FILES src/*.cpp src/*.hpp)
 
-include_directories(lib/curl)
+include_directories(src/lib/curl)
 target_link_libraries(bittorrent curl)
 
 
