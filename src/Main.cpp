@@ -599,13 +599,73 @@ std::string http_get(const std::string &url)
     curl_easy_cleanup(curl);
     return response;
 }
-std::vector<std::string> request_peers(const std::string &trackerURL, const std::string &infoHash,
-                                       const std::string &peerID, size_t length)
+std::vector<std::string> request_peers(const std::string &trackerURL,
+                                       const std::string &infoHash,
+                                       const std::string &peerID,
+                                       size_t length)
 {
+    // Perform the GET request
     std::string trackerResponse = http_get(generate_tracker_url(trackerURL, infoHash, peerID, length));
+
+    // Decode the response
     int index = 0;
     json decodedResponse = decode_bencoded_value(trackerResponse, index);
-    return parse_peers(decodedResponse["peers"]);
+
+    // Check for a failure reason
+    if (decodedResponse.contains("failure reason"))
+    {
+        std::string reason = decodedResponse["failure reason"].get<std::string>();
+        throw std::runtime_error("Tracker error: " + reason);
+    }
+
+    // Check if "peers" is present
+    if (!decodedResponse.contains("peers"))
+    {
+        throw std::runtime_error("Tracker response does not contain 'peers'");
+    }
+
+    // Now handle the "peers" field
+    auto &peersValue = decodedResponse["peers"];
+    std::vector<std::string> peerAddresses;
+
+    if (peersValue.is_string())
+    {
+        // --- COMPACT FORMAT ---
+        std::string peersStr = peersValue.get<std::string>();
+        // Each peer is 6 bytes: 4 for IP, 2 for port
+        for (size_t i = 0; i + 5 < peersStr.size(); i += 6)
+        {
+            uint8_t a = static_cast<uint8_t>(peersStr[i]);
+            uint8_t b = static_cast<uint8_t>(peersStr[i + 1]);
+            uint8_t c = static_cast<uint8_t>(peersStr[i + 2]);
+            uint8_t d = static_cast<uint8_t>(peersStr[i + 3]);
+            uint16_t port = (static_cast<uint8_t>(peersStr[i + 4]) << 8) | static_cast<uint8_t>(peersStr[i + 5]);
+
+            std::string ip = std::to_string(a) + "." + std::to_string(b) + "." +
+                             std::to_string(c) + "." + std::to_string(d);
+            peerAddresses.push_back(ip + ":" + std::to_string(port));
+        }
+    }
+    else if (peersValue.is_array())
+    {
+        // --- NON-COMPACT FORMAT ---
+        for (auto &peerObj : peersValue)
+        {
+            // Make sure "ip" and "port" exist
+            if (peerObj.contains("ip") && peerObj.contains("port"))
+            {
+                std::string ip = peerObj["ip"].get<std::string>();
+                int port = peerObj["port"].get<int>();
+                peerAddresses.push_back(ip + ":" + std::to_string(port));
+            }
+        }
+    }
+    else
+    {
+        throw std::runtime_error("Unsupported 'peers' format in tracker response.");
+    }
+
+    return peerAddresses;
 }
 
 auto parse_torrent_file(const std::string &filePath)
