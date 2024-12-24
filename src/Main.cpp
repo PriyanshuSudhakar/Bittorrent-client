@@ -9,7 +9,7 @@
 #include "lib/sha1.hpp"
 #include "lib/nlohmann/json.hpp"
 #include "lib/HTTP.hpp"
-#include "lib/curl.h"
+#include "lib/curl/curl.h"
 #include <array>
 #include <cstring>
 #include <random>
