@@ -73,6 +73,8 @@ enum MessageType : uint8_t
     cancel = 8
 };
 
+std::string hex_to_bytes(const std::string &hex);
+
 void send_message(int sockfd, MessageType messageType, const std::vector<uint8_t> &payload = {})
 {
     uint32_t length = htonl(payload.size() + 1);
