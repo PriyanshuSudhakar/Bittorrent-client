@@ -9,8 +9,12 @@
 #include "lib/nlohmann/json.hpp"
 #include "lib/HTTP.hpp"
 #include <random>
-#include "lib/WinSock2.h"
-#include "lib/WS2tcpip.h"
+#ifdef _WIN32
+#include <winsock2.h>
+#pragma comment(lib, "ws2_32.lib") // Link Winsock library
+// #include "lib/WinSock2.h"
+// #include "lib/WS2tcpip.h"
+#endif
 
 using json = nlohmann::json;
 
