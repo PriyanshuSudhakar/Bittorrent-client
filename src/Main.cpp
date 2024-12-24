@@ -762,7 +762,7 @@ int main(int argc, char *argv[])
         try
         {
             auto [decoded_torrent, trackerURL, length, pieceLength, totalPieces, infoHash, pieceHashes] = parse_torrent_file(filePath);
-            std::string peerID = "01234567890123456789";
+            std::string peerID = generate_random_peer_id();
             // Perform the tracker GET request to get a list of peers
             // parse the peers and print them
             std::vector<std::string> peerList = request_peers(trackerURL, infoHash, peerID, length);
