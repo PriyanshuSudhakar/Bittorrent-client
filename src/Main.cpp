@@ -14,6 +14,10 @@
 #include <BaseTsd.h>
 typedef SSIZE_T ssize_t;
 #pragma comment(lib, "ws2_32.lib") // Link Winsock library
+#else
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 #define closesocket close
 // #include "lib/WinSock2.h"
 // #include "lib/WS2tcpip.h"
