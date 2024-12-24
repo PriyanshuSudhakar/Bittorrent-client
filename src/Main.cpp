@@ -12,6 +12,7 @@
 #ifdef _WIN32
 #include <winsock2.h>
 #include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
 #pragma comment(lib, "ws2_32.lib") // Link Winsock library
 #define closesocket close
 // #include "lib/WinSock2.h"
@@ -19,8 +20,6 @@
 #endif
 
 using json = nlohmann::json;
-
-typedef SSIZE_T ssize_t;
 
 struct Handshake
 {
