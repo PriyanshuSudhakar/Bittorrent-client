@@ -168,12 +168,12 @@ std::vector<uint8_t> download_piece(int sockfd, size_t pieceIndex, size_t pieceL
         {
             throw std::runtime_error("Expected piece message");
         }
-        int index = ntohl(*reinterpret_cast<int *>(&message[1]));
+        int ix = ntohl(*reinterpret_cast<int *>(&message[1]));
         int begin = ntohl(*reinterpret_cast<int *>(&message[5]));
         const uint8_t *block = &message[9];
         int blockLength = message.size() - 9;
         auto it = std::find_if(pendingRequests.begin(), pendingRequests.end(), [&](const BlockRequest &req)
-                               { return req.piece_index == index && req.offset == begin; });
+                               { return req.piece_index == ix && req.offset == begin; });
         if (it == pendingRequests.end())
         {
             throw std::runtime_error("Unexpected block received");
