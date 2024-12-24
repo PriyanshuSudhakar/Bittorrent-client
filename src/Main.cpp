@@ -656,6 +656,73 @@ void write_to_disk(const std::vector<uint8_t> &fullFileData, int argc, char **ar
     std::cout << "File written to " << outputFile << std::endl;
 }
 
+std::vector<uint8_t> download_file(const std::string &trackerURL, const std::string &infoHash, const size_t &length, const size_t &pieceLength, const size_t &totalPieces, const std::string &pieceHashes)
+{
+    std::string peerID = "01234567890123456789";
+    // Perform the tracker GET request to get a list of peers
+    std::vector<std::string> peerList = request_peers(trackerURL, infoHash, peerID, length);
+    // Establish a TCP connection with a peer, and perform a handshake
+    Handshake handshake(hex_to_binary(infoHash), peerID);
+    std::vector<char> handshakeMessage = handshake.toVector();
+
+    if (peerList.empty())
+    {
+        throw std::runtime_error("No peers available for connection");
+    }
+    std::string peerInfo = peerList[0];
+    // Store the full file data
+    std::vector<uint8_t> fullFileData(length, 0);
+    try
+    {
+        auto [peerIP, peerPort] = parse_peer_info(peerInfo);
+        // Step 1: Establish TCP connection with the peer
+        int sockfd = connect_to_peer(peerIP, peerPort);
+        perform_handshake(sockfd, handshakeMessage, hex_to_binary(infoHash));
+        // Exchange multiple peer messages to download the file
+        // TODO
+        // Receive bitfield message
+        std::vector<uint8_t> bitfield = receive_message(sockfd);
+        if (bitfield[0] != MessageType::bitfield)
+        {
+            throw std::runtime_error("Expected bitfield message");
+        }
+        // int byteIndex = piece_index / 8;
+        // int bitIndex = piece_index % 8;
+        // if (byteIndex >= bitfield.size() - 1 || !(bitfield[byteIndex + 1] & (1 << (7 - bitIndex)))) {
+        //     std::cout << "Peer does not have the requested piece" << std::endl;
+        //     closesocket(sockfd);
+        //     // continue;
+        // }
+        std::cout << "Peer has the requested piece. Initiating download..." << std::endl;
+        // Send interested message
+        send_message(sockfd, MessageType::interested);
+        // Receive unchoke message
+        std::vector<uint8_t> unchoke = receive_message(sockfd);
+        if (unchoke[0] != MessageType::unchoke)
+        {
+            throw std::runtime_error("Expected unchoke message");
+        }
+        // Send request message
+        // Divide piece into blocks and request each blocks
+        // Receive piece message for each block requested
+        // Note: INDEX ALWAYS STARTS FROM ZERO, DO NOT FORGET THIS
+        for (size_t piece_index = 0; piece_index < totalPieces; piece_index++)
+        {
+            std::vector<uint8_t> pieceData = download_piece(sockfd, piece_index, pieceLength, totalPieces, length, pieceHashes);
+            // Write piece to disk
+            std::copy(pieceData.begin(), pieceData.end(), fullFileData.begin() + piece_index * pieceLength);
+            ;
+            std::cout << "Piece " << (piece_index + 1) << "/" << totalPieces << " downloaded successfully" << std::endl;
+        }
+        closesocket(sockfd);
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Error with peer: " << e.what() << std::endl;
+    }
+    return fullFileData;
+}
+
 int main(int argc, char *argv[])
 {
     // Flush after every std::cout / std::cerr
@@ -866,6 +933,20 @@ int main(int argc, char *argv[])
                 // continue;
             }
             // }
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << e.what() << '\n';
+        }
+    }
+    else if (command == "download")
+    {
+        std::string filePath = argv[argc - 1];
+        try
+        {
+            auto [decoded_torrent, trackerURL, length, pieceLength, totalPieces, infoHash, pieceHashes] = parse_torrent_file(filePath);
+            std::vector<uint8_t> fullFileData = download_file(trackerURL, infoHash, length, pieceLength, totalPieces, pieceHashes);
+            write_to_disk(fullFileData, argc, argv);
         }
         catch (const std::exception &e)
         {
