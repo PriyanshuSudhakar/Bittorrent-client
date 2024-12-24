@@ -4,9 +4,9 @@ project(bittorrent-starter-cpp)
 
 file(GLOB_RECURSE SOURCE_FILES src/*.cpp src/*.hpp)
 
-find_package(CURL REQUIRED)
-add_executable(bittorrent src/Main.cpp)
-target_link_libraries(bittorrent ${CURL_LIBRARIES})
+include_directories(lib/curl)
+target_link_libraries(bittorrent curl)
+
 
 set(CMAKE_CXX_STANDARD 23) # Enable the C++23 standard
 
