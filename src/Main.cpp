@@ -454,13 +454,13 @@ int main(int argc, char *argv[])
             std::string encoded_info_hash = sha1.final();
             encoded_info_hash = hex_to_bytes(encoded_info_hash);
 
-            std::string peerID = "00112233445566778899";
+            std::string peerID = generate_random_peer_id();
 
             Handshake handshake(encoded_info_hash, peerID);
             std::vector<char> handshakeMessage = handshake.toVector();
             // Step 1: Establish TCP connection with the peer
             int sockfd = connect_to_peer(peerIP, peerPort);
-            perform_handshake(sockfd, handshakeMessage, hex_to_bytes(encoded_info_hash));
+            perform_handshake(sockfd, handshakeMessage, (encoded_info_hash));
             // close the socket
             closesocket(sockfd);
         }
