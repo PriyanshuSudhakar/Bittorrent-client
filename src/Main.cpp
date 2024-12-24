@@ -144,103 +144,52 @@ std::string calculateInfohash(std::string bencoded_info)
     return infoHash;
 }
 
-std::vector<uint8_t> download_piece(
-    int sockfd,
-    size_t pieceIndex,
-    size_t pieceLength,
-    size_t totalPieces,
-    size_t length,
-    const std::string &pieceHashes)
+std::vector<uint8_t> download_piece(int sockfd, size_t pieceIndex, size_t pieceLength, size_t totalPieces, size_t length, const std::string &pieceHashes)
 {
-    // Number of times we'll attempt to fetch the piece
-    int maxRetries = 3;
-    std::vector<uint8_t> finalPieceData;
-
-    for (int attempt = 1; attempt <= maxRetries; ++attempt)
+    size_t currentPieceSize = (pieceIndex == totalPieces - 1)
+                                  ? length % pieceLength
+                                  : pieceLength;
+    currentPieceSize = (currentPieceSize == 0) ? pieceLength : currentPieceSize;
+    size_t remaining = currentPieceSize, offset = 0;
+    std::vector<uint8_t> pieceData(currentPieceSize);
+    std::deque<BlockRequest> pendingRequests;
+    while (remaining > 0 || !pendingRequests.empty())
     {
-        try
+        while (pendingRequests.size() < 20 && remaining > 0)
         {
-            // --- Original logic below ---
-            size_t currentPieceSize = (pieceIndex == totalPieces - 1)
-                                          ? length % pieceLength
-                                          : pieceLength;
-            currentPieceSize = (currentPieceSize == 0) ? pieceLength : currentPieceSize;
-
-            size_t remaining = currentPieceSize, offset = 0;
-            std::vector<uint8_t> pieceData(currentPieceSize);
-            std::deque<BlockRequest> pendingRequests;
-
-            while (remaining > 0 || !pendingRequests.empty())
-            {
-                while (pendingRequests.size() < 20 && remaining > 0)
-                {
-                    size_t blockSize = std::min(PIECE_BLOCK, remaining);
-                    request_block(sockfd, pieceIndex, offset, blockSize);
-                    pendingRequests.push_back({pieceIndex, offset, blockSize});
-                    offset += blockSize;
-                    remaining -= blockSize;
-                }
-
-                std::vector<uint8_t> message = receive_message(sockfd);
-                if (message[0] != MessageType::piece)
-                {
-                    throw std::runtime_error("Expected piece message");
-                }
-
-                int index = ntohl(*reinterpret_cast<int *>(&message[1]));
-                int begin = ntohl(*reinterpret_cast<int *>(&message[5]));
-                const uint8_t *block = &message[9];
-                int blockLength = static_cast<int>(message.size()) - 9;
-
-                auto it = std::find_if(
-                    pendingRequests.begin(),
-                    pendingRequests.end(),
-                    [&](const BlockRequest &req)
-                    {
-                        return req.piece_index == index && req.offset == begin;
-                    });
-                if (it == pendingRequests.end())
-                {
-                    throw std::runtime_error("Unexpected block received");
-                }
-
-                std::memcpy(&pieceData[it->offset], block, blockLength);
-                pendingRequests.erase(it);
-            }
-
-            // --- Verify piece hash ---
-            std::string pieceHash = calculateInfohash(
-                std::string(pieceData.begin(), pieceData.end()));
-            std::string expectedPieceHash(
-                pieceHashes.begin() + pieceIndex * 20,
-                pieceHashes.begin() + (pieceIndex + 1) * 20);
-            if (hex_to_bytes(pieceHash) != expectedPieceHash)
-            {
-                throw std::runtime_error("Piece hash mismatch");
-            }
-
-            // If we got here, the piece is valid
-            finalPieceData = std::move(pieceData);
-            break; // Stop retry loop on success
+            size_t blockSize = std::min(PIECE_BLOCK, remaining);
+            request_block(sockfd, pieceIndex, offset, blockSize);
+            pendingRequests.push_back({pieceIndex, offset, blockSize});
+            offset += blockSize;
+            remaining -= blockSize;
         }
-        catch (const std::exception &e)
+        std::vector<uint8_t> message = receive_message(sockfd);
+        if (message[0] != MessageType::piece)
         {
-            std::cerr << "Attempt " << attempt
-                      << " to download piece " << pieceIndex
-                      << " failed: " << e.what() << std::endl;
-
-            if (attempt == maxRetries)
-            {
-                // After maxRetries, rethrow the error so the caller knows it failed
-                throw;
-            }
-            // Otherwise, it will try again
+            throw std::runtime_error("Expected piece message");
         }
+        int index = ntohl(*reinterpret_cast<int *>(&message[1]));
+        int begin = ntohl(*reinterpret_cast<int *>(&message[5]));
+        const uint8_t *block = &message[9];
+        int blockLength = message.size() - 9;
+        auto it = std::find_if(pendingRequests.begin(), pendingRequests.end(), [&](const BlockRequest &req)
+                               { return req.piece_index == index && req.offset == begin; });
+        if (it == pendingRequests.end())
+        {
+            throw std::runtime_error("Unexpected block received");
+        }
+        std::memcpy(&pieceData[it->offset], block, blockLength);
+        pendingRequests.erase(it);
     }
-
-    return finalPieceData;
+    // Verify piece hash
+    std::string pieceHash = calculateInfohash(std::string(pieceData.begin(), pieceData.end()));
+    std::string expectedPieceHash(pieceHashes.begin() + pieceIndex * 20, pieceHashes.begin() + (pieceIndex + 1) * 20);
+    if (hex_to_bytes(pieceHash) != expectedPieceHash)
+    {
+        throw std::runtime_error("Piece hash mismatch");
+    }
+    return pieceData;
 }
-
 void write_to_disk(const std::vector<uint8_t> &fullFileData, int argc, char **argv)
 {
     std::string outputFile = get_output_file(argc, argv);
