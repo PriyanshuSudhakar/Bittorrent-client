@@ -11,7 +11,9 @@
 #include <random>
 #ifdef _WIN32
 #include <winsock2.h>
+#include <BaseTsd.h>
 #pragma comment(lib, "ws2_32.lib") // Link Winsock library
+#define closesocket close
 // #include "lib/WinSock2.h"
 // #include "lib/WS2tcpip.h"
 #endif
