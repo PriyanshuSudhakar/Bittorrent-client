@@ -624,220 +624,85 @@ auto parse_torrent_file(const std::string &filePath)
 
 int main(int argc, char *argv[])
 {
-    // Flush after every std::cout / std::cerr
     std::cout << std::unitbuf;
     std::cerr << std::unitbuf;
 
     if (argc < 2)
     {
-        std::cerr << "Usage: " << argv[0] << " decode <encoded_value>" << std::endl;
+        std::cerr << "Usage: " << argv[0] << " <command> [args]" << std::endl;
         return 1;
     }
 
     std::string command = argv[1];
 
-    if (command == "decode")
+    try
     {
-        if (argc < 3)
+        if (command == "decode")
         {
-            std::cerr << "Usage: " << argv[0] << " decode <encoded_value>" << std::endl;
-            return 1;
-        }
-        // You can use print statements as follows for debugging, they'll be visible when running tests.
-        std::cerr << "Logs from your program will appear here!" << std::endl;
-
-        // Uncomment this block to pass the first stage
-        std::string encoded_value = argv[2];
-        int index = 0;
-        json decoded_value = decode_bencoded_value(encoded_value, index);
-        std::cout << decoded_value.dump() << std::endl;
-    }
-    else if (command == "info")
-    {
-        std::string filePath = argv[2];
-        std::ifstream file(filePath, std::ios::binary);
-        std::string fileContent((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-        file.close();
-        int id = 0;
-        json decoded_value = decode_bencoded_value(fileContent, id);
-        std::string bencoded_info = json_to_bencode(decoded_value["info"]);
-        // std::cout<<bencoded_info<<std::endl;
-        SHA1 sha1;
-        sha1.update(bencoded_info);
-        std::string info_hash = sha1.final();
-        std::cout << "Tracker URL: " << decoded_value["announce"].get<std::string>() << std::endl;
-        std::cout << "Length: " << decoded_value["info"]["length"].get<int>() << std::endl;
-        std::cout << "Info Hash: " << info_hash << std::endl;
-        std::cout << "Piece Length: " << decoded_value["info"]["piece length"] << std::endl;
-        // std::cout << "Pieces: " << decoded_value["info"]["pieces"] << std::endl;
-        print_piece_hashes(decoded_value["info"]["pieces"]);
-    }
-    else if (command == "peers")
-    {
-        std::ifstream input_file{argv[2], std::ios::binary};
-        if (!input_file)
-        {
-            std::cerr << "Error opening torrent file: " << argv[2] << std::endl;
-            return 1;
-        }
-        std::vector<char> file_data((std::istreambuf_iterator<char>(input_file)), std::istreambuf_iterator<char>());
-        std::string_view file_data_view(file_data.data(), file_data.size());
-        std::string file_data_str(file_data_view);
-        try
-        {
-            int index = 0;
-            SHA1 sha1;
-            auto decoded_info = decode_bencoded_value(file_data_str, index);
-            std::string bencoded_string = json_to_bencode(decoded_info.at("info"));
-            std::string url = decoded_info.at("announce").get<std::string>();
-            // SHA1 sha1;
-            sha1.update(bencoded_string);
-            std::string encoded_info_hash = sha1.final();
-            encoded_info_hash = hex_to_bytes(encoded_info_hash);
-            encoded_info_hash = url_encode(encoded_info_hash);
-            std::string left = std::to_string(file_data.size()); // Convert size_t to string
-            std::string peer_id = generate_random_peer_id();
-            std::cout << url + "?info_hash=" + encoded_info_hash + "&peer_id=" + peer_id + "&port=6881&uploaded=0&downloaded=0&left=" + left + "&compact=1" << std::endl;
-            http::Request request{url + "?info_hash=" + encoded_info_hash + "&peer_id=" + peer_id + "&port=6881&uploaded=0&downloaded=0&left=" + left + "&compact=1"};
-            const auto response = request.send("GET");
-            std::string response_body{response.body.begin(), response.body.end()};
-            std::string_view response_body_view(response_body.data(), response_body.size());
-            index = 0;
-            std::string response_body_str(response_body_view);
-            auto decoded_response = decode_bencoded_value(response_body_str, index);
-            std::string peers = decoded_response.at("peers").get<std::string>();
-            for (size_t i = 0; i < peers.length(); i += 6)
+            if (argc < 3)
             {
-                std::string ip = std::to_string(static_cast<unsigned char>(peers[i])) + "." +
-                                 std::to_string(static_cast<unsigned char>(peers[i + 1])) + "." +
-                                 std::to_string(static_cast<unsigned char>(peers[i + 2])) + "." +
-                                 std::to_string(static_cast<unsigned char>(peers[i + 3]));
-                uint16_t port = (static_cast<uint16_t>(static_cast<unsigned char>(peers[i + 4]) << 8)) | static_cast<uint16_t>(static_cast<unsigned char>(peers[i + 5]));
-                std::cout << ip << ":" << port << std::endl;
+                throw std::runtime_error("Usage: decode <encoded_value>");
             }
-        }
-        catch (const std::exception &e)
-        {
-            std::cerr << "Error: " << e.what() << std::endl;
-        }
-    }
-    else if (command == "handshake")
-    {
-        std::string filePath = argv[2];
-        std::ifstream file(filePath, std::ios::binary);
-        std::string fileContent((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-        file.close();
-
-        try
-        {
-            std::string peer_info = argv[3];
-            auto [peerIP, peerPort] = parse_peer_info(peer_info);
+            std::string encoded_value = argv[2];
             int index = 0;
-            json decoded_torrent = decode_bencoded_value(fileContent, index);
-            std::string bencoded_info = json_to_bencode(decoded_torrent["info"]);
-
-            SHA1 sha1;
-            sha1.update(bencoded_info);
-            std::string encoded_info_hash = sha1.final();
-            encoded_info_hash = hex_to_bytes(encoded_info_hash);
-
-            std::string peerID = generate_random_peer_id();
-
-            Handshake handshake(encoded_info_hash, peerID);
-            std::vector<char> handshakeMessage = handshake.toVector();
-            // Step 1: Establish TCP connection with the peer
-            int sockfd = connect_to_peer(peerIP, peerPort);
-            perform_handshake(sockfd, handshakeMessage, (encoded_info_hash));
-            // close the socket
-            closesocket(sockfd);
+            json decoded_value = decode_bencoded_value(encoded_value, index);
+            std::cout << decoded_value.dump() << std::endl;
         }
-        catch (const std::exception &e)
+        else if (command == "info")
         {
-            std::cerr << e.what() << '\n';
+            if (argc < 3)
+            {
+                throw std::runtime_error("Usage: info <file_path>");
+            }
+            parse_torrent(argv[2]);
         }
-    }
-    else if (command == "download_piece")
-    {
-        std::string filePath = argv[4];
-        try
+        else if (command == "download_piece")
         {
-            auto [decoded_torrent, trackerURL, length, pieceLength, totalPieces, infoHash, pieceHashes] = parse_torrent_file(filePath);
+            if (argc < 6)
+            {
+                throw std::runtime_error("Usage: download_piece -o <output_file> <torrent_file> <piece_index>");
+            }
+            std::string output_file = argv[3];
+            std::string torrent_file = argv[4];
+            int piece_index = std::stoi(argv[5]);
+
+            auto [decoded_torrent, trackerURL, length, pieceLength, totalPieces, infoHash, pieceHashes] = parse_torrent_file(torrent_file);
             std::string peerID = generate_random_peer_id();
-            // Perform the tracker GET request to get a list of peers
-            // parse the peers and print them
             std::vector<std::string> peerList = request_peers(trackerURL, infoHash, peerID, length);
-            // Establish a TCP connection with a peer, and perform a handshake
-            Handshake handshake(hex_to_bytes(infoHash), peerID);
-            std::vector<char> handshakeMessage = handshake.toVector();
 
             if (peerList.empty())
             {
-                throw std::runtime_error("No peers available for connection");
+                throw std::runtime_error("No peers available");
             }
-            // Piece index from command line
-            // "./your_bittorrent.sh download_piece -o /tmp/test-piece sample.torrent <piece_index>"
-            int piece_index = std::stoi(argv[5]);
-            std::string peerInfo = peerList[0];
-            // for (const auto& peerInfo : peerList)
-            // {
-            try
+
+            for (const auto &peer : peerList)
             {
-                auto [peerIP, peerPort] = parse_peer_info(peerInfo);
-                // Step 1: Establish TCP connection with the peer
-                int sockfd = connect_to_peer(peerIP, peerPort);
-                perform_handshake(sockfd, handshakeMessage, hex_to_bytes(infoHash));
-                // Exchange multiple peer messages to download the file
-                // TODO
-                // Receive bitfield message
-                std::vector<uint8_t> bitfield = receive_message(sockfd);
-                if (bitfield[0] != MessageType::bitfield)
+                try
                 {
-                    throw std::runtime_error("Expected bitfield message");
-                }
-                int byteIndex = piece_index / 8;
-                int bitIndex = piece_index % 8;
-                if (byteIndex >= bitfield.size() - 1 || !(bitfield[byteIndex + 1] & (1 << (7 - bitIndex))))
-                {
-                    std::cout << "Peer does not have the requested piece" << std::endl;
+                    auto [peerIP, peerPort] = parse_peer_info(peer);
+                    int sockfd = connect_to_peer(peerIP, peerPort);
+                    Handshake handshake(infoHash, peerID);
+                    perform_handshake(sockfd, handshake.toVector(), hex_to_bytes(infoHash));
+
+                    std::vector<uint8_t> pieceData = download_piece(sockfd, piece_index, pieceLength, totalPieces, length, pieceHashes);
+                    write_to_disk(pieceData, argc, argv);
                     closesocket(sockfd);
-                    // continue;
+                    break; // Successfully downloaded the piece, exit the loop
                 }
-                std::cout << "Peer has the requested piece. Initiating download..." << std::endl;
-                // Send interested message
-                send_message(sockfd, MessageType::interested);
-                // Receive unchoke message
-                std::vector<uint8_t> unchoke = receive_message(sockfd);
-                if (unchoke[0] != MessageType::unchoke)
+                catch (const std::exception &e)
                 {
-                    throw std::runtime_error("Expected unchoke message");
+                    std::cerr << "Failed with peer: " << peer << " - " << e.what() << std::endl;
                 }
-                // Send request message
-                // Divide piece into blocks and request each blocks
-                // Receive piece message for each block requested
-                // Note: INDEX ALWAYS STARTS FROM ZERO, DO NOT FORGET THIS
-                std::vector<uint8_t> pieceData = download_piece(sockfd, piece_index, pieceLength, totalPieces, length, pieceHashes);
-                // Write piece to disk
-                std::ofstream output(argv[3]);
-                output.write(reinterpret_cast<const char *>(pieceData.data()), pieceData.size());
-                output.close();
-                std::cout << "Piece downloaded successfully" << std::endl;
-                closesocket(sockfd);
             }
-            catch (const std::exception &e)
-            {
-                std::cerr << "Error with peer: " << e.what() << std::endl;
-                // continue;
-            }
-            // }
         }
-        catch (const std::exception &e)
+        else
         {
-            std::cerr << e.what() << '\n';
+            throw std::runtime_error("Unknown command: " + command);
         }
     }
-    else
+    catch (const std::exception &e)
     {
-        std::cerr << "unknown command: " << command << std::endl;
+        std::cerr << "Error: " << e.what() << std::endl;
         return 1;
     }
 
