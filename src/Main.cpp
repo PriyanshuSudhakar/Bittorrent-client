@@ -286,6 +286,18 @@ int connect_to_peer(const std::string &ip, int port)
     return sockfd;
 }
 
+std::string bytes_to_hex(const std::string &bytes)
+{
+    std::ostringstream hex;
+    hex.fill('0');
+    hex << std::hex;
+    for (unsigned char c : bytes)
+    {
+        hex << std::setw(2) << static_cast<int>(c);
+    }
+    return hex.str();
+}
+
 void perform_handshake(int sockfd, const std::vector<char> &handshakeMessage, const std::string &binaryInfoHash)
 {
     if (send(sockfd, handshakeMessage.data(), handshakeMessage.size(), 0) == -1)
