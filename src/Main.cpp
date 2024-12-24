@@ -512,7 +512,8 @@ std::string read_file(const std::string &filePath)
 void parse_torrent(const std::string &filePath)
 {
     std::string fileContent = read_file(filePath);
-    json decoded_torrent = decode_bencoded_value(fileContent);
+    int index = 0;
+    json decoded_torrent = decode_bencoded_value(fileContent, index);
     // bencode the torrent
     std::string bencoded_info = json_to_bencode(decoded_torrent["info"]);
     // calculate the info hash
@@ -608,7 +609,8 @@ std::vector<std::string> request_peers(const std::string &trackerURL, const std:
 auto parse_torrent_file(const std::string &filePath)
 {
     std::string fileContent = read_file(filePath);
-    json decodedTorrent = decode_bencoded_value(fileContent);
+    int index = 0;
+    json decodedTorrent = decode_bencoded_value(fileContent, index);
     std::string trackerURL = decodedTorrent["announce"];
     size_t length = decodedTorrent["info"]["length"];
     size_t pieceLength = decodedTorrent["info"]["piece length"];
